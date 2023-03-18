@@ -20,13 +20,14 @@ export function App() {
   )
 
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
+    // Bug 5: Not updating isLoading state while fetching transactions data
+    // setIsLoading(true)
     transactionsByEmployeeUtils.invalidateData()
 
     await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
 
-    setIsLoading(false)
+    // setIsLoading(false)
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
@@ -38,6 +39,8 @@ export function App() {
   )
 
   useEffect(() => {
+    // Bug 5: Wait for loading employees then fetch transactions
+    setIsLoading(employeeUtils.loading)
     if (employees === null && !employeeUtils.loading) {
       loadAllTransactions()
     }
@@ -64,8 +67,9 @@ export function App() {
             if (newValue === null) {
               return
             }
-
-            await loadTransactionsByEmployee(newValue.id)
+            // Bug 3: Added code to wait for loadAllTransactions to complete if id is null
+            if(newValue.id === null || newValue.id === "") await loadAllTransactions()
+            else await loadTransactionsByEmployee(newValue.id)            
           }}
         />
 
@@ -74,7 +78,8 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {/* Bug 6: Check if next page data exists */}
+          {paginatedTransactions?.nextPage && transactions !== null && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
